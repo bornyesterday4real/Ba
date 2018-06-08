@@ -11,18 +11,6 @@ class BaBot
   def initialize(token)
     @bot = Discordrb::Commands::CommandBot.new token: token, prefix: '?ba '
     @invite_url = "#{@bot.invite_url}&permissions=2112"
-
-    @bot.message { |event| message event }
-    @bot.ready { |event| event.bot.game = 'Ba' }
-    @bot.mention { |event| mention event }
-    @bot.command(:num_servers) { |event| num_servers event }
-  end
-
-  def message(event)
-    message_content = event.message.content.downcase
-    Ba::BaHelpers.get_message_reactions(message_content).each do |emote|
-      event.message.react emote
-    end
   end
 
   def mention(event)
