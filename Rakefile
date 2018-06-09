@@ -3,8 +3,8 @@
 require './lib/ba_bot'
 
 desc 'Run the bot'
-task :default do
-  BaBot.new(ENV['TOKEN']).bot.run
+task :run do
+  sh 'bundle exec ruby lib/quote_me.rb'
 rescue Interrupt
   exit
 end

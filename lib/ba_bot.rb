@@ -1,37 +1,49 @@
 # frozen_string_literal: true
 
 require 'discordrb'
-require_relative './ba/ba_helpers'
+require 'ostruct'
+require 'yaml'
 
-class BaBot
-  include Ba::BaHelpers
+module Ba
+  CONFIG = OpenStruct.new YAML.load_file 'config/config.yml'
+  CONFIG.token = ENV['TOKEN']
 
-  attr_accessor :invite_url, :bot
-
-  def initialize(token)
-    @bot = Discordrb::Commands::CommandBot.new token: token, prefix: '?ba '
-    @invite_url = "#{@bot.invite_url}&permissions=2112"
+  if CONFIG.token.empty?
+    puts 'Discord auth token not set, unable to start bot'
+    puts 'Exiting...'
+    exit
   end
 
-  def mention(event)
-    return if event.author.bot_account?
+  BA_BOT = Discordrb::Commands::CommandBot.new(token: CONFIG.token,
+                                               prefix: CONFIG.command_prefix)
+  INVITE_URL = "#{BA_BOT.invite_url}&permissions=#{CONFIG.permissions}"
 
-    event << 'BAAAAAAAAAAA!!!'
-    event << ''
-    event << 'Want to contribute to making me better? Check me out at:'
-    event << '<https://github.com/flutterflies/ba>'
-    event << ''
-    event << 'Add me to your server using this link'
-    event << "<#{@invite_url}>"
-  end
+  Discordrb::LOGGER.info 'Welcome to Ba!'
+  Discordrb::LOGGER.info 'Use ctrl+C to safely exit.'
+  Discordrb::LOGGER.info "Use this link to invite your bot: #{INVITE_URL}"
 
-  def num_servers(event)
-    unless event.author.id == 145_696_462_959_935_488
-      event << "I'm sorry #{event.author.mention}, you cannot run this command."
-      event << 'You must be the bot owner to user this command'
-      return
+  def self.load_module(name, path)
+    new_module = Module.new
+    const_set name, new_module
+    Dir["lib/modules/#{path}/*.rb"].each { |file| load file }
+    new_module.constants.each do |mod|
+      BA_BOT.include! new_module.const_get(mod)
     end
-
-    event << "Ba is currently running on #{@bot.servers.size} servers"
   end
+  load_module :BaEvents, 'events'
+  load_module :BaCommands, 'commands'
+
+  Signal.trap 'INT' do
+    Discordrb::LOGGER.info 'Exiting...'
+    Discordrb::LOGGER.info 'Have a nice day!'
+    # rubocop:disable Lint/HandleExceptions
+    begin
+      BA_BOT.stop
+    rescue ThreadError
+    end
+    # rubocop:enable Lint/HandleExceptions
+    exit
+  end
+
+  BA_BOT.run
 end

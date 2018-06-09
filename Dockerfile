@@ -5,4 +5,4 @@ COPY Gemfile* ./
 RUN bundle install
 COPY . .
 
-CMD bundle exec rake
+CMD ["bundle", "exec", "rake", "run"]
