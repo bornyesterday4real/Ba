@@ -31,3 +31,4 @@ Ba adds reactations to message posted in Discord channels based on regex string 
 
 After building the docker image you can run tests with `docker run ba rspec`
 
+
